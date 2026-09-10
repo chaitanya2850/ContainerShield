@@ -192,7 +192,7 @@ Trivy must also be available in the system `PATH`, since the application invokes
 
 Create the PostgreSQL database:
 
-```sql
+```psql
 CREATE DATABASE containershield;
 ```
 
@@ -204,7 +204,7 @@ spring:
     name: containershield
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/containershield
+    url: jdbc:postgresql://localhost:5432/containershield 
     username: postgres
     password: postgres
 
@@ -573,7 +573,7 @@ The project is intended to evolve into a more complete **container security and 
 
 # 👨‍💻 Author
 
-**Chaitanya**
+**Chaitanya Patil**
 
 GitHub:
 https://github.com/chaitanya2850
