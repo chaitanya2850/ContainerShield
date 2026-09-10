@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: containershield
+  datasource:
+    url: jdbc:postgresql://localhost:5432/containershield
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
