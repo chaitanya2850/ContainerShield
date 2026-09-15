@@ -124,7 +124,6 @@ public class DockerService {
     }
 
     public DockerContainerEntity getImages(String id){
-        DockerContainerEntity dockerContainerEntity;
         try {
 
             ProcessBuilder processBuilder = new ProcessBuilder(

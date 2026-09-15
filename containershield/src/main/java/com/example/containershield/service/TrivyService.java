@@ -1,7 +1,7 @@
 package com.example.containershield.service;
 
 import com.example.containershield.dto.TrivyVulnerability;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -11,12 +11,19 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-@AllArgsConstructor
 @Service
-public class TrivyService {
+public class TrivyService implements ContainerScanner {
 
     private final ObjectMapper objectMapper;
 
+    @Value("${trivy.server.url}")
+    private String trivyServerUrl;
+
+    public TrivyService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
     public List<TrivyVulnerability> scanImage(String imageName) {
 
         List<TrivyVulnerability> vulnerabilities = new ArrayList<>();
@@ -24,33 +31,70 @@ public class TrivyService {
         try {
 
             ProcessBuilder processBuilder = new ProcessBuilder(
-                    "trivy",
+                    "docker",
+                    "run",
+                    "--rm",
+
+                    "--network",
+                    "containershield-network",
+
+                    "-v",
+                    "/var/run/docker.sock:/var/run/docker.sock",
+
+                    "aquasec/trivy:0.74.0",
+
                     "image",
+
+                    "--docker-host",
+                    "unix:///var/run/docker.sock",
+
+                    "--server",
+                    trivyServerUrl,
+
                     "--format",
                     "json",
+
                     imageName
             );
 
             Process process = processBuilder.start();
 
-            BufferedReader reader = new BufferedReader(
+            // Read Trivy JSON output from stdout
+            BufferedReader outputReader = new BufferedReader(
                     new InputStreamReader(process.getInputStream())
             );
 
+            // Read Trivy logs/errors separately from stderr
+            BufferedReader errorReader = new BufferedReader(
+                    new InputStreamReader(process.getErrorStream())
+            );
+
             StringBuilder output = new StringBuilder();
+            StringBuilder errorOutput = new StringBuilder();
+
             String line;
 
-            while ((line = reader.readLine()) != null) {
-                output.append(line);
+            while ((line = outputReader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            while ((line = errorReader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
             }
 
             int exitCode = process.waitFor();
 
+            // If Trivy failed, show the actual error
             if (exitCode != 0) {
-                throw new RuntimeException("Trivy scan failed");
+                throw new RuntimeException(
+                        "Trivy scan failed: " + errorOutput
+                );
             }
 
-            JsonNode root = objectMapper.readTree(output.toString());
+            // Parse only stdout because it contains the JSON
+            JsonNode root = objectMapper.readTree(
+                    output.toString()
+            );
 
             JsonNode results = root.get("Results");
 
@@ -70,22 +114,35 @@ public class TrivyService {
 
                 for (JsonNode vulnerability : vulnerabilityList) {
 
-                    String fixedVersion = "";
-                    System.out.println(vulnerability.toPrettyString());
-                    if (vulnerability.has("FixedVersion")) {
-                        fixedVersion =
-                                vulnerability.get("FixedVersion").asString();
-                    }
-
                     vulnerabilities.add(
                             new TrivyVulnerability(
-                                    vulnerability.path("VulnerabilityID").asString(),
-                                    vulnerability.path("PkgName").asString(),
-                                    vulnerability.path("InstalledVersion").asString(),
-                                    vulnerability.path("FixedVersion").asString(),
-                                    vulnerability.path("Severity").asString(),
-                                    vulnerability.path("Title").asString(),
-                                    vulnerability.path("Description").asString()
+                                    vulnerability
+                                            .path("VulnerabilityID")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("PkgName")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("InstalledVersion")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("FixedVersion")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("Severity")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("Title")
+                                            .asString(),
+
+                                    vulnerability
+                                            .path("Description")
+                                            .asString()
                             )
                     );
                 }

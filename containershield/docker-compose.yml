@@ -1,0 +1,22 @@
+services:
+
+  trivy:
+    image: aquasec/trivy:0.74.0
+    container_name: containershield-trivy
+    command:
+      - server
+      - --listen
+      - 0.0.0.0:4954
+    ports:
+      - "4954:4954"
+    volumes:
+      - trivy-cache:/root/.cache/trivy
+    networks:
+      - containershield-network
+
+volumes:
+  trivy-cache:
+
+networks:
+  containershield-network:
+    name: containershield-network

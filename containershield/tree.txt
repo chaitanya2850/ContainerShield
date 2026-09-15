@@ -1,0 +1,80 @@
+.
+├── docker-compose.yml
+├── Dockerfile
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── src
+│   ├── main
+│   │   ├── java
+│   │   │   └── com
+│   │   │       └── example
+│   │   │           └── containershield
+│   │   │               ├── ContainershieldApplication.java
+│   │   │               ├── controller
+│   │   │               │   ├── DockerController.java
+│   │   │               │   ├── HealthController.java
+│   │   │               │   └── TrivyController.java
+│   │   │               ├── dto
+│   │   │               │   └── TrivyVulnerability.java
+│   │   │               ├── entity
+│   │   │               │   ├── DockerContainerEntity.java
+│   │   │               │   └── DockerImageEntity.java
+│   │   │               └── service
+│   │   │                   ├── ContainerScanner.java
+│   │   │                   ├── DockerService.java
+│   │   │                   └── TrivyService.java
+│   │   └── resources
+│   │       └── application.yaml
+│   └── test
+│       └── java
+│           └── com
+│               └── example
+│                   └── containershield
+│                       └── ContainershieldApplicationTests.java
+├── target
+│   ├── classes
+│   │   ├── application.yaml
+│   │   └── com
+│   │       └── example
+│   │           └── containershield
+│   │               ├── ContainershieldApplication.class
+│   │               ├── controller
+│   │               │   ├── DockerController.class
+│   │               │   ├── HealthController.class
+│   │               │   └── TrivyController.class
+│   │               ├── dto
+│   │               │   └── TrivyVulnerability.class
+│   │               ├── entity
+│   │               │   ├── DockerContainerEntity.class
+│   │               │   └── DockerImageEntity.class
+│   │               └── service
+│   │                   ├── ContainerScanner.class
+│   │                   ├── DockerService.class
+│   │                   └── TrivyService.class
+│   ├── containershield-0.0.1-SNAPSHOT.jar
+│   ├── containershield-0.0.1-SNAPSHOT.jar.original
+│   ├── generated-sources
+│   │   └── annotations
+│   ├── generated-test-sources
+│   │   └── test-annotations
+│   ├── maven-archiver
+│   │   └── pom.properties
+│   ├── maven-status
+│   │   └── maven-compiler-plugin
+│   │       ├── compile
+│   │       │   └── default-compile
+│   │       │       ├── createdFiles.lst
+│   │       │       └── inputFiles.lst
+│   │       └── testCompile
+│   │           └── default-testCompile
+│   │               ├── createdFiles.lst
+│   │               └── inputFiles.lst
+│   └── test-classes
+│       └── com
+│           └── example
+│               └── containershield
+│                   └── ContainershieldApplicationTests.class
+└── tree.txt
+
+41 directories, 37 files

@@ -2,7 +2,6 @@ package com.example.containershield.controller;
 
 import com.example.containershield.dto.TrivyVulnerability;
 import com.example.containershield.service.TrivyService;
-import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
