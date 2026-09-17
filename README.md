@@ -8,6 +8,11 @@ ContainerShield is a Spring Boot backend for Docker container monitoring and Doc
 * View all Docker containers
 * Scan Docker images for vulnerabilities
 * Return vulnerability details through REST APIs
+* Store scan results in PostgreSQL
+* Maintain persistent scan history
+* View previous scan summaries
+* View detailed results of previous scans
+* Track vulnerability counts by severity
 * PostgreSQL database integration
 * Trivy runs as a Docker service using Docker Compose
 
@@ -27,6 +32,39 @@ ContainerShield is a Spring Boot backend for Docker container monitoring and Doc
 ```text
 containershield/
 ├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/example/containershield/
+│   │   │       ├── controller/
+│   │   │       │   ├── DockerController.java
+│   │   │       │   ├── HealthController.java
+│   │   │       │   ├── TrivyController.java
+│   │   │       │   └── ScanHistoryController.java
+│   │   │       │
+│   │   │       ├── dto/
+│   │   │       │   ├── TrivyVulnerability.java
+│   │   │       │   └── ScanHistorySummary.java
+│   │   │       │
+│   │   │       ├── entity/
+│   │   │       │   ├── DockerContainerEntity.java
+│   │   │       │   ├── DockerImageEntity.java
+│   │   │       │   ├── ScanHistoryEntity.java
+│   │   │       │   └── ScanVulnerabilityEntity.java
+│   │   │       │
+│   │   │       ├── repository/
+│   │   │       │   └── ScanHistoryRepository.java
+│   │   │       │
+│   │   │       └── service/
+│   │   │           ├── ContainerScanner.java
+│   │   │           ├── DockerService.java
+│   │   │           ├── ScanHistoryService.java
+│   │   │           └── TrivyService.java
+│   │   │
+│   │   └── resources/
+│   │       └── application.yaml
+│   │
+│   └── test/
+│
 ├── pom.xml
 ├── Dockerfile
 ├── docker-compose.yml
@@ -44,7 +82,7 @@ Install:
 * PostgreSQL
 * Git
 
-Trivy does **not** need to be installed separately. It runs through Docker Compose.
+Trivy does not need to be installed separately. It runs through Docker Compose.
 
 Check:
 
@@ -132,7 +170,7 @@ Linux/macOS:
 
 Windows:
 
-```powershell
+```bash
 mvnw.cmd spring-boot:run
 ```
 
@@ -184,6 +222,79 @@ The scan returns vulnerability information such as:
 * Title
 * Description
 
+Every successful scan is also automatically stored in PostgreSQL.
+
+### Scan History
+
+Get all previous scan summaries:
+
+```bash
+curl http://localhost:8080/api/scans
+```
+
+The response contains information such as:
+
+* Scan ID
+* Image name
+* Total vulnerabilities
+* Critical vulnerabilities
+* High vulnerabilities
+* Medium vulnerabilities
+* Low vulnerabilities
+* Unknown vulnerabilities
+* Scan time
+
+Example:
+
+```json
+[
+  {
+    "id": 1,
+    "imageName": "redis:latest",
+    "totalVulnerabilities": 195,
+    "critical": 3,
+    "high": 55,
+    "medium": 69,
+    "low": 67,
+    "unknown": 1,
+    "scanTime": "2026-09-17T11:53:03"
+  }
+]
+```
+
+### Get Scan Details
+
+To view the complete details of a previous scan:
+
+```bash
+curl http://localhost:8080/api/scans/1
+```
+
+This returns the scan information along with the individual vulnerabilities found during that scan.
+
+## Scan History Flow
+
+```text
+Docker Image
+     │
+     ▼
+Trivy Scan
+     │
+     ▼
+Vulnerability Results
+     │
+     ├──────────────► REST API Response
+     │
+     ▼
+ScanHistoryService
+     │
+     ▼
+PostgreSQL
+     │
+     ▼
+Scan History
+```
+
 ## Stopping the Application
 
 Stop Spring Boot with:
@@ -217,4 +328,3 @@ Run tests:
 Chaitanya Patil
 
 GitHub: https://github.com/chaitanya2850
-
