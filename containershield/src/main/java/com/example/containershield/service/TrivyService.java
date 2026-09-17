@@ -147,7 +147,7 @@ public class TrivyService implements ContainerScanner {
                     );
                 }
             }
-
+            System.out.println("Total vulnerabilities found: " + vulnerabilities.size());
             return vulnerabilities;
 
         } catch (Exception e) {
