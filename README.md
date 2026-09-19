@@ -1,20 +1,24 @@
 # ContainerShield
 
-ContainerShield is a Spring Boot backend for Docker container monitoring and Docker image vulnerability scanning using Trivy.
+ContainerShield is a Spring Boot backend for Docker container monitoring, Docker image vulnerability scanning (via Trivy), source code security scanning (via Semgrep), and an AI-powered security assistant (via Ollama) that answers questions grounded in your own scan results.
 
 ## Features
 
 * View running Docker containers
 * View all Docker containers
-* Scan Docker images for vulnerabilities
+* View Docker images present on the host
+* Scan Docker images for dependency/OS vulnerabilities using Trivy
 * Return vulnerability details through REST APIs
 * Store scan results in PostgreSQL
 * Maintain persistent scan history
 * View previous scan summaries
 * View detailed results of previous scans
 * Track vulnerability counts by severity
+* Match Trivy findings against a `pom.xml`'s direct dependencies
+* Scan project source code for real security issues using Semgrep (e.g. SQL injection), with exact file and line number
+* Ask natural-language questions about scan results through an AI assistant (Ollama, runs locally, no API key or cost)
 * PostgreSQL database integration
-* Trivy runs as a Docker service using Docker Compose
+* Trivy, Postgres, Adminer, and Ollama all run as Docker services via Docker Compose
 
 ## Tech Stack
 
@@ -25,6 +29,8 @@ ContainerShield is a Spring Boot backend for Docker container monitoring and Doc
 * Docker
 * Docker Compose
 * Trivy 0.74.0
+* Semgrep
+* Ollama (`qwen2.5-coder:7b`)
 * Maven
 
 ## Project Structure
@@ -35,29 +41,47 @@ containershield/
 │   ├── main/
 │   │   ├── java/
 │   │   │   └── com/example/containershield/
+│   │   │       ├── configurations/
+│   │   │       │   └── RestConfig.java
+│   │   │       │
 │   │   │       ├── controller/
+│   │   │       │   ├── ChatController.java
 │   │   │       │   ├── DockerController.java
 │   │   │       │   ├── HealthController.java
-│   │   │       │   ├── TrivyController.java
-│   │   │       │   └── ScanHistoryController.java
+│   │   │       │   ├── ScanHistoryController.java
+│   │   │       │   ├── SemgrepController.java
+│   │   │       │   └── TrivyController.java
 │   │   │       │
 │   │   │       ├── dto/
-│   │   │       │   ├── TrivyVulnerability.java
-│   │   │       │   └── ScanHistorySummary.java
+│   │   │       │   ├── ChatRequest.java
+│   │   │       │   ├── ChatResponse.java
+│   │   │       │   ├── DockerImageDTO.java
+│   │   │       │   ├── FixSuggestion.java
+│   │   │       │   ├── ScanHistoryDetailsDTO.java
+│   │   │       │   ├── ScanHistorySummary.java
+│   │   │       │   ├── ScanVulnerabilityDTO.java
+│   │   │       │   ├── SemgrepFinding.java
+│   │   │       │   └── TrivyVulnerability.java
 │   │   │       │
 │   │   │       ├── entity/
 │   │   │       │   ├── DockerContainerEntity.java
-│   │   │       │   ├── DockerImageEntity.java
 │   │   │       │   ├── ScanHistoryEntity.java
-│   │   │       │   └── ScanVulnerabilityEntity.java
+│   │   │       │   ├── ScanVulnerabilityEntity.java
+│   │   │       │   ├── SourceCodeFinding.java
+│   │   │       │   └── VulnerabilityFinding.java
 │   │   │       │
 │   │   │       ├── repository/
-│   │   │       │   └── ScanHistoryRepository.java
+│   │   │       │   ├── ScanHistoryRepository.java
+│   │   │       │   ├── SourceCodeFindingRepository.java
+│   │   │       │   └── VulnerabilityFindingRepository.java
 │   │   │       │
 │   │   │       └── service/
+│   │   │           ├── ChatService.java
 │   │   │           ├── ContainerScanner.java
 │   │   │           ├── DockerService.java
+│   │   │           ├── ManifestMatcherService.java
 │   │   │           ├── ScanHistoryService.java
+│   │   │           ├── SemgrepService.java
 │   │   │           └── TrivyService.java
 │   │   │
 │   │   └── resources/
@@ -66,8 +90,8 @@ containershield/
 │   └── test/
 │
 ├── pom.xml
-├── Dockerfile
 ├── docker-compose.yml
+├── .env.example
 ├── mvnw
 ├── mvnw.cmd
 └── .gitignore
@@ -79,17 +103,17 @@ Install:
 
 * Java 17 or later
 * Docker
-* PostgreSQL
+* Docker Compose
 * Git
 
-Trivy does not need to be installed separately. It runs through Docker Compose.
+Postgres, Trivy, Adminer, and Ollama do not need to be installed separately — they all run through Docker Compose.
 
 Check:
 
 ```bash
 java -version
 docker --version
-psql --version
+docker compose version
 ```
 
 ## How to Run
@@ -106,13 +130,23 @@ git clone https://github.com/chaitanya2850/ContainerShield.git
 cd ContainerShield/containershield
 ```
 
-### 3. Start Trivy
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Adjust values in `.env` if desired (database name/user/password).
+
+### 4. Start supporting services
 
 ```bash
 docker compose up -d
 ```
 
-Check that Trivy is running:
+This starts Postgres, Trivy, Adminer, and Ollama.
+
+Check that everything is running:
 
 ```bash
 docker ps
@@ -122,6 +156,9 @@ You should see:
 
 ```text
 containershield-trivy
+containershield-postgres
+containershield-adminer
+containershield-ollama
 ```
 
 Test Trivy:
@@ -136,29 +173,19 @@ Expected:
 ok
 ```
 
-### 4. Start PostgreSQL
+**First run only:** the Ollama container automatically downloads the `qwen2.5-coder:7b` model (~4.7GB) in the background — this can take several minutes. Check progress:
 
-Make sure PostgreSQL is running and create the database:
-
-```sql
-CREATE DATABASE containershield;
+```bash
+docker logs -f containershield-ollama
 ```
 
-Default configuration:
+Confirm the model finished downloading:
 
-```text
-Database: containershield
-Host: localhost
-Port: 5432
-Username: postgres
-Password: postgres
+```bash
+docker exec -it containershield-ollama ollama list
 ```
 
-If your PostgreSQL username or password is different, update:
-
-```text
-src/main/resources/application.yaml
-```
+You should see `qwen2.5-coder:7b` listed. On future restarts this step is skipped, since the model persists in a Docker volume.
 
 ### 5. Start Spring Boot
 
@@ -185,7 +212,13 @@ http://localhost:8080
 ### Health
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8080/health-check
+```
+
+Returns:
+
+```text
+Ok
 ```
 
 ### Running Containers
@@ -194,13 +227,25 @@ curl http://localhost:8080/health
 curl http://localhost:8080/api/docker/containers/running
 ```
 
+Returns a list of currently running containers on the host — ID, name, image, status.
+
 ### All Containers
 
 ```bash
 curl http://localhost:8080/api/docker/containers/all
 ```
 
-### Scan Docker Image
+Returns all containers on the host, running or stopped.
+
+### Docker Images
+
+```bash
+curl http://localhost:8080/api/docker/images
+```
+
+Returns Docker images present on the host — ID, repository, tag, size, created.
+
+### Scan Docker Image (Trivy)
 
 ```bash
 curl "http://localhost:8080/api/trivy/scan?image=redis:latest"
@@ -222,7 +267,18 @@ The scan returns vulnerability information such as:
 * Title
 * Description
 
-Every successful scan is also automatically stored in PostgreSQL.
+Every successful scan is also automatically stored in PostgreSQL, both as individual findings and as a scan history summary.
+
+### Scan Image + Match Against pom.xml
+
+```bash
+curl -X POST "http://localhost:8080/api/trivy/scan-with-manifest?image=myapp:1.0" \
+  -F "manifest=@/path/to/pom.xml"
+```
+
+Returns each Trivy finding alongside whether it matches a direct dependency in the given `pom.xml`, and the fixed version to bump to.
+
+**Note:** only direct dependencies are matched — vulnerabilities in transitive dependencies (pulled in automatically by something like `spring-boot-starter-web`) are not matched by this endpoint yet.
 
 ### Scan History
 
@@ -272,6 +328,40 @@ curl http://localhost:8080/api/scans/1
 
 This returns the scan information along with the individual vulnerabilities found during that scan.
 
+### Scan Source Code (Semgrep)
+
+```bash
+curl "http://localhost:8080/api/semgrep/scan?path=/path/to/your/project&projectName=myapp:1.0"
+```
+
+Runs Semgrep against the given local project folder (Java, using the `p/java` ruleset) and returns:
+
+* Check ID (which rule matched)
+* File path
+* Start/end line number
+* Severity
+* Message (plain-English explanation)
+* Vulnerability class (e.g. "SQL Injection")
+
+Every finding is also stored in PostgreSQL.
+
+### Ask the AI Assistant
+
+```bash
+curl -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectOrImageName": "myapp:1.0",
+    "question": "What are the most critical issues here and how do I fix them?"
+  }'
+```
+
+Fetches every Trivy finding and every Semgrep finding stored under the given name, and returns a plain-English answer from a locally-run LLM — including prioritization and concrete fixes (exact `pom.xml` version bumps, corrected code snippets, etc.).
+
+**Important:** `projectOrImageName` must exactly match the name used in both the Trivy scan and the Semgrep scan (including any version tag), or the assistant will have nothing to answer from.
+
+**Performance note:** response time depends on whether Ollama is running on CPU or GPU. On CPU-only hardware, a response can take one to several minutes for a large scan.
+
 ## Scan History Flow
 
 ```text
@@ -285,6 +375,8 @@ Vulnerability Results
      │
      ├──────────────► REST API Response
      │
+     ├──────────────► VulnerabilityFinding (used by AI Assistant)
+     │
      ▼
 ScanHistoryService
      │
@@ -292,7 +384,7 @@ ScanHistoryService
 PostgreSQL
      │
      ▼
-Scan History
+Scan History (summaries + details)
 ```
 
 ## Stopping the Application
@@ -303,11 +395,13 @@ Stop Spring Boot with:
 Ctrl + C
 ```
 
-Stop Trivy:
+Stop supporting services:
 
 ```bash
 docker compose down
 ```
+
+**Note:** `docker compose down -v` additionally removes all volumes — this wipes the database, Trivy's cache, and the downloaded Ollama model. Only use `-v` if you intend to reset everything from scratch.
 
 ## Development
 
@@ -322,6 +416,20 @@ Run tests:
 ```bash
 ./mvnw test
 ```
+
+## Design Notes
+
+* ContainerShield is intended to be deployed either on a company's own private infrastructure or run locally by an individual developer — it is not designed as a public multi-tenant service, since that would mean running untrusted Docker commands against images/code it doesn't control.
+* The AI assistant runs entirely locally via Ollama — no cloud API key, no per-query cost, and scan data never leaves the machine/network it runs on.
+* All scan data is passed directly into the assistant's prompt rather than using a vector database, since scan sizes (a handful to a few hundred findings) don't require retrieval search to stay within context limits.
+
+## Future Work
+
+* Trace transitive dependencies (via `mvn dependency:tree`) so vulnerabilities pulled in indirectly can also be matched to a fix
+* Support additional manifest formats (`package.json`, `build.gradle`, `requirements.txt`)
+* Web frontend for triggering scans and chatting with the assistant
+* Containerize the Spring Boot backend itself once the API surface stabilizes
+* Optional GPU passthrough configuration for Ollama
 
 ## Author
 
