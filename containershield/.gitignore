@@ -14,5 +14,9 @@ Thumbs.db
 # Logs
 *.log
 
-https:/
+#gitignore
+.gitignore
+
+# Environment variables
+.env
 
