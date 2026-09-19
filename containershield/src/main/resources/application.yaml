@@ -3,9 +3,9 @@ spring:
     name: containershield
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/containershield
-    username: postgres
-    password: postgres
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
 
   jpa:
     hibernate:
@@ -13,4 +13,4 @@ spring:
 
 trivy:
   server:
-    url: ${TRIVY_SERVER_URL:http://containershield-trivy:4954}
+    url: ${TRIVY_SERVER_URL}

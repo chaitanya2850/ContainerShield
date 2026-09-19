@@ -1,6 +1,8 @@
 package com.example.containershield.service;
 
 import com.example.containershield.dto.TrivyVulnerability;
+import com.example.containershield.entity.VulnerabilityFinding;
+import com.example.containershield.repository.VulnerabilityFindingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -8,6 +10,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,12 +18,14 @@ import java.util.List;
 public class TrivyService implements ContainerScanner {
 
     private final ObjectMapper objectMapper;
+    private final VulnerabilityFindingRepository findingRepository;
 
     @Value("${trivy.server.url}")
     private String trivyServerUrl;
 
-    public TrivyService(ObjectMapper objectMapper) {
+    public TrivyService(ObjectMapper objectMapper, VulnerabilityFindingRepository findingRepository) {
         this.objectMapper = objectMapper;
+        this.findingRepository = findingRepository;
     }
 
     @Override
@@ -102,6 +107,8 @@ public class TrivyService implements ContainerScanner {
                 return vulnerabilities;
             }
 
+            LocalDateTime scanTime = LocalDateTime.now();
+
             for (JsonNode result : results) {
 
                 JsonNode vulnerabilityList =
@@ -114,40 +121,42 @@ public class TrivyService implements ContainerScanner {
 
                 for (JsonNode vulnerability : vulnerabilityList) {
 
-                    vulnerabilities.add(
-                            new TrivyVulnerability(
-                                    vulnerability
-                                            .path("VulnerabilityID")
-                                            .asString(),
+                    String fullDescription = vulnerability
+                            .path("Description")
+                            .asString();
 
-                                    vulnerability
-                                            .path("PkgName")
-                                            .asString(),
-
-                                    vulnerability
-                                            .path("InstalledVersion")
-                                            .asString(),
-
-                                    vulnerability
-                                            .path("FixedVersion")
-                                            .asString(),
-
-                                    vulnerability
-                                            .path("Severity")
-                                            .asString(),
-
-                                    vulnerability
-                                            .path("Title")
-                                            .asString(),
-
-                                    vulnerability
-                                            .path("Description")
-                                            .asString()
-                            )
+                    TrivyVulnerability dto = new TrivyVulnerability(
+                            vulnerability.path("VulnerabilityID").asString(),
+                            vulnerability.path("PkgName").asString(),
+                            vulnerability.path("InstalledVersion").asString(),
+                            vulnerability.path("FixedVersion").asString(),
+                            vulnerability.path("Severity").asString(),
+                            vulnerability.path("Title").asString(),
+                            fullDescription
                     );
+
+                    vulnerabilities.add(dto);
+
+                    // Truncate only for what gets persisted, not the API response
+                    String storedDescription = fullDescription != null && fullDescription.length() > 500
+                            ? fullDescription.substring(0, 500) + "..."
+                            : fullDescription;
+
+                    findingRepository.save(new VulnerabilityFinding(
+                            null,
+                            imageName,
+                            scanTime,
+                            dto.getVulnerabilityID(),
+                            dto.getPackageName(),
+                            dto.getInstalledVersion(),
+                            dto.getFixedVersion(),
+                            dto.getSeverity(),
+                            dto.getTitle(),
+                            storedDescription
+                    ));
                 }
             }
-            System.out.println("Total vulnerabilities found: " + vulnerabilities.size());
+
             return vulnerabilities;
 
         } catch (Exception e) {

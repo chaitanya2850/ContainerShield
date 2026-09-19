@@ -1,5 +1,4 @@
 services:
-
   trivy:
     image: aquasec/trivy:0.74.0
     container_name: containershield-trivy
@@ -13,9 +12,73 @@ services:
       - trivy-cache:/root/.cache/trivy
     networks:
       - containershield-network
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4954/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  postgres:
+    image: postgres:17
+    container_name: containershield-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - containershield-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  adminer:
+    image: adminer:latest
+    container_name: containershield-adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - containershield-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  ollama:
+    image: ollama/ollama
+    container_name: containershield-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - containershield-network
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "ollama serve &
+      sleep 5 &&
+      ollama pull qwen2.5-coder:7b &&
+      wait"
 
 volumes:
   trivy-cache:
+  postgres_data:
+  ollama_data:
 
 networks:
   containershield-network:

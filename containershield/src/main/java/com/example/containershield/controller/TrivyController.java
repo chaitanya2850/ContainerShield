@@ -1,12 +1,16 @@
 package com.example.containershield.controller;
 
+import com.example.containershield.dto.FixSuggestion;
 import com.example.containershield.dto.TrivyVulnerability;
 import com.example.containershield.entity.ScanHistoryEntity;
+import com.example.containershield.service.ManifestMatcherService;
 import com.example.containershield.service.ScanHistoryService;
 import com.example.containershield.service.TrivyService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -15,11 +19,13 @@ public class TrivyController {
 
     private final TrivyService trivyService;
     private final ScanHistoryService scanHistoryService;
+    private final ManifestMatcherService manifestMatcherService;
 
     public TrivyController(
             TrivyService trivyService,
-            ScanHistoryService scanHistoryService) {
-
+            ScanHistoryService scanHistoryService,
+            ManifestMatcherService manifestMatcherService) {
+        this.manifestMatcherService = manifestMatcherService;
         this.trivyService = trivyService;
         this.scanHistoryService = scanHistoryService;
     }
@@ -40,5 +46,20 @@ public class TrivyController {
 
         // Return vulnerabilities to the client
         return ResponseEntity.ok(vulnerabilities);
+    }
+
+    @PostMapping("/scan-with-manifest")
+    public ResponseEntity<List<FixSuggestion>> scanWithManifest(
+            @RequestParam String image,
+            @RequestParam("manifest") MultipartFile manifestFile) throws IOException {
+
+        List<TrivyVulnerability> findings = trivyService.scanImage(image);
+
+        String manifestContent = new String(manifestFile.getBytes());
+
+        List<FixSuggestion> suggestions =
+                manifestMatcherService.matchAgainstPomXml(manifestContent, findings);
+
+        return ResponseEntity.ok(suggestions);
     }
 }
