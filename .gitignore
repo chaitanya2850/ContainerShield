@@ -1,0 +1,82 @@
+# =========================================
+# Only ContainerShield should be committed
+# =========================================
+
+/ContainerShield_Frontend/
+/diagram.png
+/gpt/
+/mine/
+/tree
+/https:
+
+# =========================================
+# ContainerShield - generated files
+# =========================================
+
+/containershield/target/
+/containershield/.idea/
+/containershield/.env
+
+# Maven
+/containershield/*.class
+/containershield/*.jar
+/containershield/*.war
+/containershield/*.ear
+
+# Maven generated files
+/containershield/pom.xml.tag
+/containershield/pom.xml.releaseBackup
+/containershield/pom.xml.versionsBackup
+/containershield/pom.xml.next
+/containershield/release.properties
+/containershield/dependency-reduced-pom.xml
+
+# =========================================
+# IDEs
+# =========================================
+
+/containershield/.vscode/
+/containershield/*.iml
+/containershield/*.ipr
+/containershield/*.iws
+
+# =========================================
+# OS files
+# =========================================
+
+.DS_Store
+Thumbs.db
+
+# =========================================
+# Logs / temporary files
+# =========================================
+
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# =========================================
+# Environment / secrets
+# =========================================
+
+.env
+.env.*
+!.env.example
+
+# =========================================
+# Node / frontend generated files
+# =========================================
+
+node_modules/
+dist/
+build/
+coverage/
+
+# =========================================
+# Docker
+# =========================================
+
+/containershield/docker-compose.override.yml
