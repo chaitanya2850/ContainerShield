@@ -5,6 +5,8 @@
 !/containershield/
 !/containershield/**
 
+.gitignore
+
 # Ignore ContainerShield's own Git/IDE/build files
 /containershield/.gitattributes
 /containershield/.gitignore
