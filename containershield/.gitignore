@@ -1,28 +1,82 @@
+# =========================================
+# Only ContainerShield should be committed
+# =========================================
+
+/ContainerShield_Frontend/
+/diagram.png
+/gpt/
+/mine/
+/tree
+/https:
+
+# =========================================
+# ContainerShield - generated files
+# =========================================
+
+/containershield/target/
+/containershield/.idea/
+/containershield/.env
 
 # Maven
-target/
-!.mvn/wrapper/maven-wrapper.jar
+/containershield/*.class
+/containershield/*.jar
+/containershield/*.war
+/containershield/*.ear
 
-# IDE
-.idea/
-*.iml
-.vscode/
+# Maven generated files
+/containershield/pom.xml.tag
+/containershield/pom.xml.releaseBackup
+/containershield/pom.xml.versionsBackup
+/containershield/pom.xml.next
+/containershield/release.properties
+/containershield/dependency-reduced-pom.xml
 
-# OS
+# =========================================
+# IDEs
+# =========================================
+
+/containershield/.vscode/
+/containershield/*.iml
+/containershield/*.ipr
+/containershield/*.iws
+
+# =========================================
+# OS files
+# =========================================
+
 .DS_Store
 Thumbs.db
 
-# Logs
+# =========================================
+# Logs / temporary files
+# =========================================
+
 *.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
 
-#gitignore
-.gitignore
-.gitattributes
+# =========================================
+# Environment / secrets
+# =========================================
 
-Dockerfile
-
-# Environment variables
 .env
+.env.*
+!.env.example
 
-/target
+# =========================================
+# Node / frontend generated files
+# =========================================
 
+node_modules/
+dist/
+build/
+coverage/
+
+# =========================================
+# Docker
+# =========================================
+
+/containershield/docker-compose.override.yml
