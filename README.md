@@ -1,8 +1,6 @@
 <div align="center">
 
-# 🛡️ ContainerShield
-
-### Docker Security Analysis Platform
+### ContainerShield : Docker Security Analysis Platform
 
 **Scan. Understand. Investigate.**
 
@@ -69,7 +67,7 @@ The goal is not to display raw scanner output alone. ContainerShield is designed
 
 AI-generated advice is a starting point for investigation, not a guarantee that a suggested change is correct or safe.
 
-## 🏗️ Architecture
+## Architecture
 
 The following is a **3D isometric overview illustration** of ContainerShield's main components. It is a visual overview rather than a deployment diagram; use the sections below for the actual setup and service details.
 
@@ -430,7 +428,7 @@ ContainerShield interacts with Docker, scans supplied image names, and runs sour
 
 The included Compose file publishes several service ports on the host for local development. Review those port mappings and bind services to loopback or a protected network when external access is not required.
 
-## ⚠️ Current Limitations
+## Current Limitations
 
 - The current project is backend/API-focused; a web dashboard is not included in the documented implementation.
 - Maven manifest matching currently covers direct dependencies, not transitive dependency resolution.
@@ -438,7 +436,7 @@ The included Compose file publishes several service ports on the host for local 
 - AI responses depend on the findings stored under the requested project or image name and may take time on CPU-only hardware.
 - AI-generated explanations and fixes are suggestions and require human review.
 
-## 🗺️ Roadmap
+## Roadmap
 
 Potential next steps:
 
@@ -460,7 +458,7 @@ Suggestions, bug reports, and improvements are welcome.
 
 For substantial changes, consider opening an issue first to discuss the proposed approach.
 
-## 📄 License
+## License
 
 > A license is not currently documented for this project.
 It will be documented soon !!
